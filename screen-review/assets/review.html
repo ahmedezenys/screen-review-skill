@@ -1,0 +1,234 @@
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* Layout: sticky bar with progress, then sections of screenshot cards; each card = phone image with a drawing layer, tools, comment box, Submit. */
+:root{
+  --bg:#F2F1F7; --card:#FFFFFF; --fg:#1B1B1F; --muted:#615F6E; --line:#E3E1EB; --soft:#F1EFF7;
+  --accent:#6E4FDB; --accent-ink:#4A31B5; --accent-soft:#EFEBFC; --ok:#1E7F56; --ok-soft:#E3F3EA; --warn:#9A5B00;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif; --body:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#131219;--card:#1C1A24;--fg:#ECEAF4;--muted:#A6A2B6;--line:#2E2B3A;--soft:#24212E;--accent:#8C72F2;--accent-ink:#C3B5FF;--accent-soft:#2A2440;--ok:#5CC58C;--ok-soft:#1B3127;--warn:#F0B45C;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#131219;--card:#1C1A24;--fg:#ECEAF4;--muted:#A6A2B6;--line:#2E2B3A;--soft:#24212E;--accent:#8C72F2;--accent-ink:#C3B5FF;--accent-soft:#2A2440;--ok:#5CC58C;--ok-soft:#1B3127;--warn:#F0B45C;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 72px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-direction:column;gap:8px}
+.eyebrow{font:600 12px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font:700 clamp(26px,4.5vw,36px)/1.1 var(--display);margin:0;text-wrap:balance}
+h2{font:700 20px/1.25 var(--display);margin:0}
+p{margin:0;max-width:70ch}
+.lede{color:var(--muted)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.prog{flex:1;min-width:160px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.count{font-weight:600;font-variant-numeric:tabular-nums}
+.status{font-size:13px;color:var(--muted)}
+.jump{font:inherit;font-size:14px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px;max-width:100%}
+section{display:flex;flex-direction:column;gap:12px;scroll-margin-top:64px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.done{border-color:var(--ok)}
+.chead{display:flex;align-items:flex-start;gap:8px}
+.num{font:600 12px/1 var(--body);color:var(--muted);background:var(--soft);border-radius:8px;padding:5px 7px;font-variant-numeric:tabular-nums}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:14.5px;line-height:1.3}
+.ttl span{font-size:13px;color:var(--muted)}
+.pill{font:600 11.5px/1 var(--body);padding:4px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);white-space:nowrap}
+.stage{position:relative;align-self:center;width:100%;max-width:330px;border-radius:14px;overflow:hidden;background:var(--soft);aspect-ratio:var(--ar,9/19.5)}
+.stage img{display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:auto;touch-action:pan-y;cursor:crosshair}
+.stage.drawing{outline:3px solid var(--accent);outline-offset:-3px}
+.stage.drawing canvas{touch-action:none}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{font:600 13px/1 var(--body);color:var(--fg);background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:9px 12px;cursor:pointer;min-height:36px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.btn:focus-visible,.sw:focus-visible,textarea:focus-visible,.primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sw{width:26px;height:26px;border-radius:13px;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--fg)}
+textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px 11px;resize:vertical;min-height:64px;width:100%}
+.row{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.primary{font:600 14px/1 var(--body);color:#fff;background:var(--accent);border:0;border-radius:999px;padding:11px 16px;cursor:pointer;min-height:40px}
+.primary:disabled{opacity:.5;cursor:default}
+.saved{font-size:12.5px;color:var(--muted)}
+.thread{display:flex;flex-direction:column;gap:6px}
+.msg{margin:0;font-size:13.5px;border-radius:12px;padding:8px 11px;max-width:92%;overflow-wrap:anywhere}
+.msg.you{background:var(--soft);align-self:flex-end}
+.msg.claude{background:var(--accent-soft);align-self:flex-start}
+.empty{color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+@media (prefers-reduced-motion: reduce){.prog i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">{{EYEBROW}}</span>
+    <h1>{{HEADING}}</h1>
+    <p class="lede">{{LEDE}} Write a comment, draw on the screenshot with your mouse or pen (on a phone, tap Draw first), then Submit. Claude replies on the card; send follow-ups any time.</p>
+  </header>
+  <div class="bar">
+    <span class="count" id="count">0 submitted</span>
+    <div class="prog" aria-hidden="true"><i id="progbar"></i></div>
+    <label for="jump" style="position:absolute;left:-9999px">Jump to section</label>
+    <select id="jump" class="jump"><option value="">Jump to section</option></select>
+    <span class="status" id="status" role="status">Connecting…</span>
+  </div>
+  <main id="main" style="display:flex;flex-direction:column;gap:28px"><p class="empty">Loading screens…</p></main>
+</div>
+
+<script>
+const COLORS = [["Red","#E5322D"],["Purple","#6E4FDB"],["Yellow","#F2B705"],["Black","#1B1B1F"]];
+const state = { items: [], saved: {}, db: null, ar: null };
+const $ = (s, r = document) => r.querySelector(s);
+const idFor = f => f.replace(/^img\//, "").replace(/\.[a-z]+$/i, "").replace(/[^A-Za-z0-9_-]/g, "_");
+function setStatus(t){ $("#status").textContent = t; }
+function updateCount(){
+  const n = state.items.filter(it => state.saved[it.id]).length;
+  $("#count").textContent = `${n} of ${state.items.length} submitted`;
+  $("#progbar").style.width = state.items.length ? (100 * n / state.items.length) + "%" : "0";
+}
+
+function card(it, idx){
+  const el = document.createElement("article");
+  el.className = "card"; el.id = "c-" + it.id;
+  el.innerHTML = `
+    <div class="chead"><span class="num"></span><div class="ttl"><b></b><span></span></div><span class="pill" hidden>Submitted</span></div>
+    <div class="stage"><img alt=""><canvas aria-label="Drawing layer"></canvas></div>
+    <div class="tools">
+      <button type="button" class="btn draw" aria-pressed="false">Draw</button>
+      ${COLORS.map(([n,c],i)=>`<button type="button" class="sw" data-c="${c}" aria-label="${n}" aria-pressed="${i===0}" style="background:${c}"></button>`).join("")}
+      <button type="button" class="btn undo">Undo</button>
+      <button type="button" class="btn clear">Clear</button>
+    </div>
+    <div class="thread" hidden></div>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)"><span class="clabel">Comment</span>
+      <textarea id="t-${it.id}" placeholder="What should change on this screen?"></textarea></label>
+    <div class="row"><span class="saved"></span><button type="button" class="primary">Submit</button></div>`;
+  $(".num", el).textContent = String(idx + 1);
+  $(".ttl b", el).textContent = it.title || it.file;
+  $(".ttl span", el).textContent = it.state || "";
+  const img = $("img", el);
+  // The first image to load sets every stage's aspect ratio (device-independent).
+  if (!state.ar) img.addEventListener("load", () => { if (!state.ar && img.naturalWidth) { state.ar = img.naturalWidth + "/" + img.naturalHeight; document.documentElement.style.setProperty("--ar", state.ar); } }, { once: true });
+  img.src = it.file; img.alt = `${it.title || ""} ${it.state || ""}`.trim();
+  const stage = $(".stage", el), cv = $("canvas", el), ctx = cv.getContext("2d");
+  const ta = $("textarea", el), btn = $(".primary", el);
+  let strokes = [], cur = null, color = COLORS[0][1], dirty = false;
+  function size(){ const r = stage.getBoundingClientRect(); const d = devicePixelRatio || 1; cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); paint(); }
+  function paint(){
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const w = cv.width, h = cv.height;
+    for (const s of strokes.concat(cur ? [cur] : [])) {
+      if (!s.p.length) continue;
+      ctx.strokeStyle = s.c; ctx.lineWidth = Math.max(3, w * 0.012); ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(s.p[0][0] * w, s.p[0][1] * h);
+      for (const [x, y] of s.p) ctx.lineTo(x * w, y * h);
+      if (s.p.length === 1) ctx.lineTo(s.p[0][0] * w + 0.1, s.p[0][1] * h);
+      ctx.stroke();
+    }
+  }
+  const pt = e => { const r = cv.getBoundingClientRect(); return [+(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))).toFixed(4), +(Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))).toFixed(4)]; };
+  // Mouse and pen draw straight away; a finger draws only in Draw mode so the page still scrolls.
+  cv.addEventListener("pointerdown", e => {
+    if (e.pointerType === "touch" && !stage.classList.contains("drawing")) return;
+    e.preventDefault(); cur = { c: color, p: [pt(e)] };
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+    paint();
+  });
+  cv.addEventListener("pointermove", e => { if (!cur) return; const p = pt(e), l = cur.p[cur.p.length - 1]; if (Math.hypot(p[0] - l[0], p[1] - l[1]) > 0.004) { cur.p.push(p); paint(); } });
+  const end = () => { if (!cur) return; strokes.push(cur); cur = null; strokeEdit(); paint(); };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+  $(".draw", el).addEventListener("click", ev => { const on = ev.currentTarget.getAttribute("aria-pressed") !== "true"; ev.currentTarget.setAttribute("aria-pressed", String(on)); ev.currentTarget.textContent = on ? "Done drawing" : "Draw"; stage.classList.toggle("drawing", on); });
+  el.querySelectorAll(".sw").forEach(b => b.addEventListener("click", () => { color = b.dataset.c; el.querySelectorAll(".sw").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }));
+  $(".undo", el).addEventListener("click", () => { strokes.pop(); strokeEdit(); paint(); });
+  $(".clear", el).addEventListener("click", () => { strokes = []; strokeEdit(); paint(); });
+  ta.addEventListener("input", mark);
+  // Each card is a conversation: messages [{from:"you"|"claude", text, at}]. Older docs only have note/reply.
+  const msgsOf = d => Array.isArray(d && d.messages) ? d.messages
+    : d ? [d.note ? { from: "you", text: d.note, at: d.submitted_at } : null, d.reply ? { from: "claude", text: d.reply } : null].filter(Boolean) : [];
+  let drawChanged = false;
+  function canSend(){ return !!state.db && (ta.value.trim() || drawChanged); }
+  function mark(){ dirty = true; btn.disabled = !canSend(); }
+  function strokeEdit(){ drawChanged = true; mark(); }
+  btn.addEventListener("click", async () => {
+    if (!canSend()) return;
+    const prev = state.saved[it.id];
+    const text = ta.value.trim() || "(updated the drawing)";
+    const messages = msgsOf(prev).concat([{ from: "you", text, at: new Date().toISOString() }]);
+    btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      await state.db.collection("feedback").doc(it.id).set({
+        file: it.file, section: it.section || "", title: it.title || "", state: it.state || "",
+        note: messages.find(m => m.from === "you")?.text || text, strokes, messages,
+        reply: prev && prev.reply || "", submitted_at: new Date().toISOString(),
+      });
+      ta.value = ""; dirty = false; drawChanged = false;
+    } catch (e) { $(".saved", el).textContent = "Couldn't send (" + (e && e.code || "error") + "). Try again."; }
+    btn.textContent = state.saved[it.id] ? "Send follow-up" : "Submit";
+    btn.disabled = !canSend();
+  });
+  el.apply = d => { // the saved conversation arrived or changed
+    const th = $(".thread", el), msgs = msgsOf(d);
+    th.hidden = !msgs.length; th.innerHTML = "";
+    for (const m of msgs) {
+      const p = document.createElement("p");
+      p.className = "msg " + (m.from === "claude" ? "claude" : "you");
+      const who = document.createElement("b"); who.textContent = m.from === "claude" ? "Claude" : "You";
+      p.append(who, document.createTextNode(" " + m.text));
+      th.appendChild(p);
+    }
+    $(".clabel", el).textContent = msgs.length ? "Follow up" : "Comment";
+    ta.placeholder = msgs.length ? "Reply or add more…" : "What should change on this screen?";
+    if (!drawChanged && !cur) { strokes = Array.isArray(d.strokes) ? d.strokes : []; paint(); }
+    btn.textContent = "Send follow-up"; btn.disabled = !canSend();
+    $(".saved", el).textContent = d.submitted_at ? "Last sent " + new Date(d.submitted_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+  };
+  el.setDone = on => { el.classList.toggle("done", on); $(".pill", el).hidden = !on; };
+  btn.disabled = true;
+  new ResizeObserver(size).observe(stage);
+  return el;
+}
+
+function render(){
+  const main = $("#main"); main.innerHTML = "";
+  if (!state.items.length) { main.innerHTML = '<p class="empty">No screens were found.</p>'; return; }
+  const groups = new Map();
+  state.items.forEach((it, i) => { const k = it.section || "Screens"; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([it, i]); });
+  let n = 0;
+  for (const [name, list] of groups) {
+    const sid = "s" + (n++);
+    const sec = document.createElement("section"); sec.id = sid;
+    const h = document.createElement("h2"); h.textContent = name; sec.appendChild(h);
+    const g = document.createElement("div"); g.className = "grid";
+    for (const [it, i] of list) g.appendChild(card(it, i));
+    sec.appendChild(g); main.appendChild(sec);
+    const o = document.createElement("option"); o.value = sid; o.textContent = `${name} (${list.length})`; $("#jump").appendChild(o);
+  }
+  updateCount();
+}
+$("#jump").addEventListener("change", e => { if (e.target.value) document.getElementById(e.target.value)?.scrollIntoView({ behavior: "smooth" }); e.target.value = ""; });
+
+fetch("manifest.json").then(r => r.json()).then(list => {
+  state.items = list.map(it => ({ ...it, id: idFor(it.file) }));
+  render(); connect();
+}).catch(() => { $("#main").innerHTML = '<p class="empty">The screen list couldn\'t be loaded. Reload the page.</p>'; });
+
+function connect(){
+  if (!(window.claude && window.claude.use)) { setStatus("Saving isn't available here; open this page on claude.ai"); return; }
+  const timer = setTimeout(() => setStatus("Can't reach saved feedback yet"), 10000);
+  window.claude.use("db").then(db => {
+    if (!db) { clearTimeout(timer); setStatus("Saving isn't available in this view"); return; }
+    state.db = db;
+    db.collection("feedback").onSnapshot(qs => {
+      if (!qs.metadata.fromCache) { clearTimeout(timer); setStatus("Saved feedback is up to date"); }
+      state.saved = {};
+      qs.docs.forEach(s => { if (s.exists) state.saved[s.id] = s.data(); });
+      for (const it of state.items) {
+        const el = document.getElementById("c-" + it.id); if (!el) continue;
+        const d = state.saved[it.id]; el.setDone(!!d); if (d) el.apply(d);
+      }
+      updateCount();
+    }, () => { clearTimeout(timer); setStatus("Couldn't load saved feedback"); });
+  });
+}
+</script>
